@@ -160,6 +160,9 @@ def embed_mutations(args):
         identifier = f"{j[id_label]}_{j[pos_label]}_{j.MUTANT}_{i}"
         data.append((identifier, seq))
 
+    with open(f'{args.output_file}_mismatch.txt', 'w+') as handle:
+        for i, j, k in bad:
+            handle.write(f"{i}\t{j}\t{k}\n")
     # How to set batch size for the batch_converter
     _, _, batch_tokens = batch_converter(data)
     batch_tokens = batch_tokens[:, 0:MAX_EMBEDDING_POS]
