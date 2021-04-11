@@ -1,5 +1,7 @@
-""" Generate fasta files containing all the mutation sequences
-to feed into es1m extract.py
+""" Generate ES1M embeddings from mutation files and stores as a pickle file
+
+usage:
+    python generate_mut_embeds.py mutation_file output_file
 """
 import argparse
 import pandas as pd
@@ -9,6 +11,7 @@ import torch
 import pickle
 
 #from alphafold2_pytorch.utils import get_esm_embedd
+
 def create_parser():
     parser = argparse.ArgumentParser(
         description="Extract per-token representations and model outputs for sequences in a FASTA file"  
@@ -28,6 +31,10 @@ def create_parser():
 
     parser.add_argument(
         "--uniprot", dest="uniprot", default=False, action="store_true"
+    )
+
+    parser.add_argument(
+        "--pdbid", dest="pdbid", default="PDIID", action="store", 
     )
 
     return parser
@@ -78,7 +85,7 @@ def embed_mutations(args):
     if args.uniprot:
         id_label = "uniprot"
     else:
-        id_label = "PDIID"
+        id_label = args.pdbid
     
     df = pd.read_csv(args.mutation_file, '\t', usecols=range(0, 6))
     df = df.loc[~df[pos_label].isnull(), :]
@@ -120,6 +127,7 @@ def embed_mutations(args):
     embedd_dict = {}
     embedd_model, alphabet = torch.hub.load(
         "facebookresearch/esm", "esm1b_t33_650M_UR50S")
+    embedd_model.cuda()
     batch_converter = alphabet.get_batch_converter()
     data = []
     uni_matches = []
