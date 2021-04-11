@@ -23,11 +23,11 @@ def create_parser():
     parser.add_argument(
         "output_file", 
         type=pathlib.Path, 
-        help="Mutation file" 
+        help="Output file" 
     )
 
     parser.add_argument(
-        "--uniprot", dest="uniprot", action=argparse.BooleanOptionalAction
+        "--uniprot", dest="uniprot", default=False, action="store_true"
     )
 
     return parser
@@ -75,7 +75,7 @@ def embed_mutations(args):
     pos_label = "RESID"
     chain_label = "CHAIN"
 
-    if argparse.uniprot:
+    if args.uniprot:
         id_label = "uniprot"
     else:
         id_label = "PDIID"
@@ -94,11 +94,14 @@ def embed_mutations(args):
     pdids = []
 
     for _, j in unique_df.iterrows():
-        uniprot_id, chain = query_uniprot_mapping(j[id_label], j[chain_label])
-        pdb_seq = query_pdb_seq(j[id_label], j[chain_label])
+        if not args.uniprot:
+            uniprot_id, chain = query_uniprot_mapping(j[id_label], j[chain_label])
+            pdb_seq = query_pdb_seq(j[id_label], j[chain_label])
+        else:
+            uniprot_id = j[id_label]
+        seqs.append(query_uniprot_seq(uniprot_id))
         #uniprot_id, chain = query_uniprot_mapping(test_query, "A")
         chains.append(chain)
-        seqs.append(query_uniprot_seq(uniprot_id))
         seqnames.append(uniprot_id)
         pdids.append(j[id_label])
         pdb_seqs.append(pdb_seq)

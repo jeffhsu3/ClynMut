@@ -2,9 +2,13 @@ SAAFEC-SEQ dataset contains the following datasets:
 http://compbio.clemson.edu/SAAFEC-SEQ/index.php
 
 # Trainset
+1. S2648 (251 out of 2649 have a wildtype mismatch)
 
 # Testset  
-S350.txt 
+1. S350.txt (79 mismatches with annotated wildtype out of 371.  Had to query both pdb and uniprot)
+2. CAGI5_TPMT_PTEN.csv (Everything matches)
+3. S276
+4. Frataxin.txt
 
 
 
