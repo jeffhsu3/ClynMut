@@ -9,6 +9,7 @@ import pathlib
 import requests
 import torch
 import pickle
+import math
 
 #from alphafold2_pytorch.utils import get_esm_embedd
 
@@ -78,9 +79,9 @@ def query_uniprot_seq(uniprot_id):
 
 def embed_mutations(args):
     # Turn these into arguments
-    # :TODO need to get the uniprot ID from PDB id + chain ID
     pos_label = "RESID"
     chain_label = "CHAIN"
+    batch_size = 20
 
     if args.uniprot:
         id_label = "uniprot"
@@ -129,6 +130,7 @@ def embed_mutations(args):
         "facebookresearch/esm", "esm1b_t33_650M_UR50S")
     embedd_model.cuda()
     batch_converter = alphabet.get_batch_converter()
+
     data = []
     uni_matches = []
     pdb_matches = []
@@ -176,13 +178,19 @@ def embed_mutations(args):
             handle.write(f"{i}\t{j}\t{k}\n")
     # How to set batch size for the batch_converter
     _, _, batch_tokens = batch_converter(data)
-    batch_tokens = batch_tokens[:, 0:MAX_EMBEDDING_POS]
-    with torch.no_grad(): 
-        results = embedd_model(batch_tokens, repr_layers=[33], return_contacts=False)
-    token_reps = results["representations"][33]
+    nbatches = batch_tokens.shape[0]/batch_size
+    batches = torch.split(batch_tokens, math.ceil(nbatches))
 
-    for i, (label, seq) in enumerate(data):
-        embedd_dict[label] = (token_reps[i, 1:len(seq)+1].mean(dim=0))
+    # TODO split data into batches as well
+
+    for n, batch in enumerate(batches):
+        batch = batch[:, 0:MAX_EMBEDDING_POS].cuda()
+        with torch.no_grad(): 
+            results = embedd_model(batch, repr_layers=[33], return_contacts=False)
+        token_reps = results["representations"][33].cpu()
+
+        for i, (label, seq) in enumerate(data[n*batch_size:((n+1)*batch_size)]):
+            embedd_dict[label] = (token_reps[i, 1:len(seq)+1].mean(dim=0)).cpu()
 
     with open(args.output_file, 'wb') as handle:
         pickle.dump(embedd_dict, handle)
